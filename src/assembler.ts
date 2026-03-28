@@ -100,6 +100,11 @@ function buildSystemPromptAddition(summarySignals: SummaryPromptSignal[]): strin
   } else {
     sections.push(
       "",
+      "**CRITICAL: When the user asks for specific values from earlier conversation** (exact numbers, credentials, phone numbers, addresses, color codes, prices, config values, names, or any concrete detail):",
+      "1) Check if the value appears verbatim in the summaries above.",
+      "2) If NOT found verbatim → you MUST call `lcm_expand_query` to retrieve it from the original messages. Do NOT answer 'I don't know' or guess.",
+      "3) The original messages are always preserved in the database — `lcm_expand_query` can find them.",
+      "",
       "**For precision/evidence questions** (exact commands, SHAs, paths, timestamps, config values, root-cause chains): expand before answering.",
       "Do not guess from condensed summaries — expand first or state uncertainty.",
     );

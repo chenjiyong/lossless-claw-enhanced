@@ -621,11 +621,14 @@ function buildLeafSummaryPrompt(params: {
           "- Keep only durable facts and current task state.",
           "- Remove examples, repetition, and low-value narrative details.",
           "- Preserve explicit TODOs, blockers, decisions, and constraints.",
+          "- ALWAYS preserve specific concrete values even in aggressive mode: numbers, credentials, addresses, color codes, thresholds, and any user-provided configuration values.",
         ].join("\n")
       : [
           "Normal summary policy:",
           "- Preserve key decisions, rationale, constraints, and active tasks.",
           "- Keep essential technical details needed to continue work safely.",
+          "- ALWAYS preserve specific concrete values: numbers, port numbers, IP addresses, phone numbers, email addresses, URLs, file paths, API keys/secrets, passwords, color codes, date/time values, version numbers, price/cost values, thresholds, and any other explicit configuration values mentioned by the user.",
+          "- Preserve names of people, places, and organizations with their associated details.",
           "- Remove obvious repetition and conversational filler.",
         ].join("\n");
 
@@ -686,6 +689,7 @@ function buildD1Prompt(params: {
       "- In-progress items with current state and what remains.",
       "- Blockers, open questions, and unresolved tensions.",
       "- Specific references (names, paths, URLs, identifiers) needed for continuation.",
+      "- ALL concrete values the user explicitly stated: port numbers, phone numbers, email addresses, API keys, secrets, passwords, color codes (#hex), prices, thresholds, physical addresses, dates/times, and configuration parameters. These are irreplaceable and must survive compaction verbatim.",
       "",
       "Drop low-value detail:",
       "- Context that has not changed from previous_context.",
