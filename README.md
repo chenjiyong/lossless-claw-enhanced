@@ -4,6 +4,18 @@
 
 Lossless Context Management plugin for [OpenClaw](https://github.com/openclaw/openclaw), based on the [LCM paper](https://papers.voltropy.com/LCM) from [Voltropy](https://x.com/Voltropy). Replaces OpenClaw's built-in sliding-window compaction with a DAG-based summarization system that preserves every message while keeping active context within model token limits.
 
+## Video Tutorial
+
+> Full walkthrough: installation, configuration, and hybrid retrieval internals.
+
+[![YouTube Video](https://img.shields.io/badge/YouTube-Watch%20Now-red?style=for-the-badge&logo=youtube)](https://youtu.be/m21PNaIW3N4)
+**https://youtu.be/MtukF1C8epQ**
+
+[![Bilibili Video](https://img.shields.io/badge/Bilibili-Watch%20Now-00A1D6?style=for-the-badge&logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV1MKXQBRE9d/)
+**https://www.bilibili.com/video/BV1zUf2BGEgn/**
+
+
+
 ## What's enhanced
 
 ### CJK-Aware Token Estimation
