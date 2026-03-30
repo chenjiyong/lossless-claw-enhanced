@@ -1733,6 +1733,40 @@ export class LcmContextEngine implements ContextEngine {
             bootstrapState &&
             bootstrapState.sessionFilePath !== params.sessionFile
           ) {
+            // Session file path changed. Distinguish between:
+            // (a) Gateway restart — new UUID but same conversation content → update path
+            // (b) Real user-initiated rotation (/reset, /new) — different content → purge
+            let contentMatches = false;
+            if (
+              bootstrapState.lastProcessedOffset > 0 &&
+              bootstrapState.lastProcessedEntryHash
+            ) {
+              try {
+                const tailEntryRaw = readLastJsonlEntryBeforeOffset(
+                  params.sessionFile,
+                  bootstrapState.lastProcessedOffset,
+                );
+                const tailEntryMessage = readBootstrapMessageFromJsonLine(tailEntryRaw);
+                const tailEntryHash = tailEntryMessage
+                  ? createBootstrapEntryHash(toStoredMessage(tailEntryMessage))
+                  : null;
+                if (tailEntryHash && tailEntryHash === bootstrapState.lastProcessedEntryHash) {
+                  contentMatches = true;
+                }
+              } catch (_) {
+                // New file unreadable or different format — treat as real rotation
+              }
+            }
+
+            if (contentMatches) {
+              // Same conversation under new file path (gateway restart).
+              // Update stored path and fall through to normal bootstrap.
+              console.error(
+                `[lcm] bootstrap: session file path changed but content matches checkpoint — ` +
+                  `updating stored path (likely gateway restart)`,
+              );
+              bootstrapState.sessionFilePath = params.sessionFile;
+            } else {
             console.error(
               `[lcm] bootstrap: session file rotated for session ${params.sessionId}: ` +
                 `"${bootstrapState.sessionFilePath}" → "${params.sessionFile}" — resetting conversation ${conversationId}`,
@@ -1778,6 +1812,7 @@ export class LcmContextEngine implements ContextEngine {
             // Reset local state so the code below treats this as a fresh conversation.
             bootstrapState = null;
             existingCount = 0;
+            }
           }
 
           // If the transcript file is byte-for-byte unchanged from the last

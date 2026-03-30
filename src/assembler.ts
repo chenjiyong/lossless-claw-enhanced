@@ -364,40 +364,42 @@ export function blockFromPart(part: MessagePartRecord): unknown {
       rawType === "function_call_output" ||
       rawType === "toolResult" ||
       rawType === "tool_result";
-    if (!isToolBlock) {
-      return metadata.raw;
-    }
-
-    // When tool blocks are routed through toolCallBlockFromPart (below) instead
-    // of returning raw directly, the function reads part.toolCallId / part.toolName
-    // from the DB columns.  For rows stored as part_type='text' those columns are
-    // often NULL — the values only live inside metadata.raw.  Backfill them here
-    // so the reconstructed block keeps the original id/name.
-    const rawRecord = metadata.raw as Record<string, unknown>;
-    const rawToolCallId =
-      typeof rawRecord.id === "string" && rawRecord.id.length > 0
-        ? rawRecord.id
-        : typeof rawRecord.call_id === "string" && rawRecord.call_id.length > 0
-          ? rawRecord.call_id
-          : undefined;
-    if (rawToolCallId) {
-      if (typeof part.toolCallId !== "string" || part.toolCallId.length === 0) {
-        part.toolCallId = rawToolCallId;
+    if (isToolBlock) {
+      // When tool blocks are routed through toolCallBlockFromPart (below) instead
+      // of returning raw directly, the function reads part.toolCallId / part.toolName
+      // from the DB columns.  For rows stored as part_type='text' those columns are
+      // often NULL — the values only live inside metadata.raw.  Backfill them here
+      // so the reconstructed block keeps the original id/name.
+      const rawRecord = metadata.raw as Record<string, unknown>;
+      const rawToolCallId =
+        typeof rawRecord.id === "string" && rawRecord.id.length > 0
+          ? rawRecord.id
+          : typeof rawRecord.call_id === "string" && rawRecord.call_id.length > 0
+            ? rawRecord.call_id
+            : undefined;
+      if (rawToolCallId) {
+        if (typeof part.toolCallId !== "string" || part.toolCallId.length === 0) {
+          part.toolCallId = rawToolCallId;
+        }
+      }
+      if (typeof rawRecord.name === "string" && rawRecord.name.length > 0) {
+        if (typeof part.toolName !== "string" || part.toolName.length === 0) {
+          part.toolName = rawRecord.name;
+        }
+      }
+      // Backfill toolInput from raw arguments/input so toolCallBlockFromPart
+      // can reconstruct the full block.
+      if (part.toolInput == null || part.toolInput === "") {
+        const rawArgs = rawRecord.arguments ?? rawRecord.input;
+        if (rawArgs !== undefined) {
+          part.toolInput = typeof rawArgs === "string" ? rawArgs : JSON.stringify(rawArgs);
+        }
       }
     }
-    if (typeof rawRecord.name === "string" && rawRecord.name.length > 0) {
-      if (typeof part.toolName !== "string" || part.toolName.length === 0) {
-        part.toolName = rawRecord.name;
-      }
-    }
-    // Backfill toolInput from raw arguments/input so toolCallBlockFromPart
-    // can reconstruct the full block.
-    if (part.toolInput == null || part.toolInput === "") {
-      const rawArgs = rawRecord.arguments ?? rawRecord.input;
-      if (rawArgs !== undefined) {
-        part.toolInput = typeof rawArgs === "string" ? rawArgs : JSON.stringify(rawArgs);
-      }
-    }
+    // Non-tool blocks: fall through to partType-based handling below.
+    // Do NOT return metadata.raw — it contains DB-internal fields
+    // (message_id, part_type, tool_call_id) that must not leak into
+    // model context. Fixes #4 and #2 (cache key hash mismatch).
   }
 
   if (part.partType === "reasoning") {

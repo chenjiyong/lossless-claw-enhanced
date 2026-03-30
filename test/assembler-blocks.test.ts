@@ -333,15 +333,18 @@ describe("blockFromPart", () => {
     expect(block.arguments).toEqual({ path: "test.md" });
   });
 
-  it("returns raw block verbatim for non-tool types", () => {
+  it("does not leak raw metadata for non-tool types (falls through to text)", () => {
+    // Fix for #4: metadata.raw for non-tool blocks must NOT be returned
+    // directly — it contains DB-internal fields that corrupt model context.
     const rawObj = { type: "custom_block", data: "something" };
     const part = makePart({
       partType: "text",
+      textContent: "hello",
       metadata: JSON.stringify({ raw: rawObj }),
     });
     const block = blockFromPart(part) as Record<string, unknown>;
 
-    expect(block).toEqual(rawObj);
+    expect(block).toEqual({ type: "text", text: "hello" });
   });
 
   it("restores OpenAI reasoning blocks from OpenClaw-normalised format", () => {
